@@ -2,15 +2,30 @@
 Repeat enrichment testing for short-read sequencing data using an assembly-free alignment approach.
 
 
-# Prerequsisites
+# Prerequisites
 
-BWA
-BEDTools
-SAMtools
-Python >= 3.7
+1. BWA (<http://bio-bwa.sourceforge.net/>)
+2. BEDTools (<https://bedtools.readthedocs.io/en/latest/index.html>)
+3. SAMtools (<http://www.htslib.org/>)
+4. Picard Tools (<https://broadinstitute.github.io/picard/>)
+5. Python >= 3.7
 
-# Running the Pipeline
+# Preparing to Run the Pipeline
 
 The pipeline works by aligning reads to an artificial genome constructed from a set of repeat consensus sequences and spacer sequences concatenated into pseudochromosomes. This genome is then indexed and used as an alignment reference for the BWA mem algorithm. Reads that map entirely or partially to any coordinates within the artificial genome can be assumed to originate from a copy of a known repeat sequence within the host genome. Matches to each type of repeat are then labeled and counted. When applied to immunoprecipitated (IP) and Input samples, enrichment tests can then be performed comparing the observed (from the IP sample) and expected (from the input sample) count densities. Fisher's exact tests are used by default. 
 
 The first step is to obtain/generate an artificial genome. Several examples are given in the "genomes" folder, or you can create your own by obtaining a repeat library from RepeatMasker, DFAM, etc., and using the "extractAncestral.py" and "makePseudoChromosomes.py" scripts, available as part of the repeatMaskerUtils repository, available [here](https://github.com/adadiehl/repeatMaskerUtils.git). This must then be indexed with bwa index before use.
+
+# Usage
+
+The enrichment test workflow is invoked with the run_enrichment_pipeline.py script. This script performs all necessary alignment, filtering, and analysis steps for a set of immunoprecipitated and control (input) reads.
+
+```bash
+run_enrichment_pipeline.py [-h] -f ip_sample.fastq
+                                  [ip_sample.fastq ...] -b input_sample.fastq
+                                  [input_sample.fastq ...] -g genome.fa
+                                  [-a /path/to/write/alingments]
+                                  [-r /path/to/write/results] [-p]
+                                  [-t THREADS] [-q N] [-o OUTROOT]
+                                  [-s SCRIPTSDIR] [-l CMDLOG]
+```
