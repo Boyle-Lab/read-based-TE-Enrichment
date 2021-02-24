@@ -24,8 +24,27 @@ The enrichment test workflow is invoked with the run_enrichment_pipeline.py scri
 run_enrichment_pipeline.py [-h] -f ip_sample.fastq
                                   [ip_sample.fastq ...] -b input_sample.fastq
                                   [input_sample.fastq ...] -g genome.fa
-                                  [-a /path/to/write/alingments]
+                                  [-a /path/to/write/alignments]
                                   [-r /path/to/write/results] [-p]
                                   [-t THREADS] [-q N] [-o OUTROOT]
                                   [-s SCRIPTSDIR] [-l CMDLOG]
 ```
+
+## Required Options
+| Short | Long | Arg(s) | Description |
+| -f | --fgSamples | ip_sample.1.fastq [ip_sample.2.fa] | Immunoprecipitated sample fastq file(s). Supplying two files will force paired-ended mode. |
+| -b | --bgSamples | input_sample.1.fastq [input_sample.2.fa] | Input sample fastq file(s). Supplying two files will force paired-ended mode. |
+| -g | --genome | genome.fa | Fasta file containing the pseudogenome to which samples will be aligned. |
+
+## Optional Arguments
+| Short | Long | Arg(s)	| Default | Description |
+| -a | --alignmentPath | /path/to/write/alignments | . | Location to write alignment data. |
+| -r | --resultsPath | /path/to/write/results | . | Location to write results. |
+| -p | --paired | | False | Toggle paired-end mode. |
+| -t | --threads | N | 1 | Maximum number of threads to use for subprocesses. |
+| -q | --minQual | N | 30 | Minimum quality score for retaining mapped reads. |
+| -o | --outRoot | OUTROOT | basename of the first IP fastq | Output root to prepend to results. |
+| -s | --scriptsDir | SCRIPTSDIR | ./scripts | Path to shell scripts. |
+| -l | --cmdLog | CMDLOG | run_enrichment_pipeline.cmd.log | File to which command output will be logged. |
+
+
