@@ -30,7 +30,7 @@ run_enrichment_pipeline.py [-h] -f ip_sample.fastq
                                   [-s SCRIPTSDIR] [-l CMDLOG]
 ```
 
-## Required Options
+## Required Arguments
 Short | Long | Arg(s) | Description
 ------|------|--------|-------------
 -f | --fgSamples | ip_sample.1.fastq [ip_sample.2.fa] | Immunoprecipitated sample fastq file(s). Supplying two files will force paired-ended mode.
