@@ -11,7 +11,7 @@ def main():
                         help='Input sample fastq file(s).')
     parser.add_argument('-g', '--genome', metavar="genome.fa", type=str, required=True,
                         help='Path to artificial genome fasta.')
-    parser.add_argument('-a', '--alignmentPath', metavar="/path/to/write/alingments", type=str, default='.',
+    parser.add_argument('-a', '--alignmentPath', metavar="/path/to/write/alignments", type=str, default='.',
                         help='Location to write alignment data.')
     parser.add_argument('-r', '--resultsPath', metavar="/path/to/write/results", type=str, default='.',
                         help='Location to write results.')
