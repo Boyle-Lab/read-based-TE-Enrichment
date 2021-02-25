@@ -3,13 +3,25 @@
 import sys, os, re, subprocess
 from argparse import ArgumentParser
 
+def constructReadCountsStr(samplesList, resultsPath, outRoot, stype):
+    """ Construct a comma-delimited string of counts files. """
+    files = []
+    for i in range(len(samplesList)):
+        files.append(os.path.join(resultsPath, outRoot) + "." + stype + "." + str(i) + ".pruned.te-counts.txt")
+    return ",".join(files)
+
+
 def main():
     parser = ArgumentParser(description='Run enrichment tests for a set of IP and input fastq files against a library of sequences in the given artificial genome.')
     parser.add_argument('-f', '--fgSamples', metavar='ip_sample.fastq', type=str, nargs='+', required=True,
                         help='Immunoprecipitated sample fastq file(s).')
+    parser.add_argument('-g', '--fgSamples2', metavar='ip_sample.fastq', type=str, nargs='+',
+                        help='Immunoprecipitated sample fastq file(s).')
     parser.add_argument('-b', '--bgSamples', metavar='input_sample.fastq', type=str, nargs='+', required=True,
                         help='Input sample fastq file(s).')
-    parser.add_argument('-g', '--genome', metavar="genome.fa", type=str, required=True,
+    parser.add_argument('-c', '--bgSamples2', metavar='input_sample.fastq', type=str, nargs='+',
+                        help='Input sample fastq file(s).')
+    parser.add_argument('-n', '--genome', metavar="genome.fa", type=str, required=True,
                         help='Path to artificial genome fasta.')
     parser.add_argument('-a', '--alignmentPath', metavar="/path/to/write/alignments", type=str, default='.',
                         help='Location to write alignment data.')
@@ -29,59 +41,65 @@ def main():
                         help="File to write command output to.")
 
     args = parser.parse_args()
-
+    
     # Sanity checks
-    if args.paired and len(args.fgSamples) < 2:
-        parser.exit(status=2, message="ERROR: --paired requires two immunoprecipitated files!\n")
-    if len(args.fgSamples) == 2 and len(args.bgSamples) == 2 and not args.paired:
+    if (args.paired and args.fgSamples2 == None) or (len(args.fgSamples) != len(args.fgSamples2)):
+        parser.exit(status=2, message="ERROR: --paired mode requires an equal number of files for pair1 and pair2 immunoprecipitated sample(s)!\n")
+    if (args.paired and args.bgSamples2 == None) or (len(args.bgSamples) != len(args.bgSamples2)):
+        parser.exit(status=2, message="ERROR: --paired mode requires an equal number of files for pair1 and pair2 input sample(s)!\n")
+    if (args.fgSamples2 != None and args.fgSamples != None) and (args.bgSamples2 != None and args.bgSamples != None) and not args.paired:
         args.paired = True
-        sys.stderr.write("WARNING: Two sets of input and immunoprecipitated samples provided. Assuming paired-ended data!\n")
-    if args.paired and len(args.bgSamples) < 2:
-        parser.exit(status=2, message="ERROR: --paired requires two input files!\n")
-    if len(args.fgSamples) != len(args.bgSamples):
-        parser.exit(status=2, message="ERROR: Immunoprecipitated and input file lists must be of the same length!\n")        
-
+        sys.stderr.write("WARNING: Paired input and immunoprecipitated samples provided. Forcing paired-ended mode!\n")
+    
     # See if the outRoot arg is set. If not, use the basename of the first fastq file.
     if args.outRoot is None:
         args.outRoot = os.path.basename(os.path.splitext(args.fgSamples[0])[0])
         
     # We will utilize external tools to run each step of the pipeline through system calls.
-
     # Alignment/coverage pipeline for IP and Input samples
     if args.paired:
-        cmd_args = [os.path.join(args.scriptsDir, "paired-ended-job.sh"), args.fgSamples[0], args.fgSamples[1], str(args.threads), str(args.minQual), args.genome, args.outRoot + ".fg", args.alignmentPath, args.resultsPath, "2>>" + args.cmdLog, "1>&2"]
-        sys.stderr.write("\nExecuting alingment, indexing, and filtering steps for IP samples: {}\n\n".format(" ".join(cmd_args)))
-        subprocess.run(cmd_args)
-        
-        cmd_args = [os.path.join(args.scriptsDir, "paired-ended-job.sh"), args.bgSamples[0], args.bgSamples[1], str(args.threads), str(args.minQual), args.genome, args.outRoot + ".bg", args.alignmentPath, args.resultsPath, "2>>" + args.cmdLog, "1>&2"]
-        sys.stderr.write("\nExecuting alingment, indexing, and filtering steps for Input samples: {}\n\n".format(" ".join(cmd_args)))
-        subprocess.run(cmd_args)
-    else:
-        cmd_args = [os.path.join(args.scriptsDir, "single-ended-job.sh"), args.fgSamples[0], str(args.threads), str(args.minQual), args.genome, args.outRoot + ".fg", args.alignmentPath, args.resultsPath, "2>>" + args.cmdLog, "1>&2"]
-        sys.stderr.write("\nExecuting alingment, indexing, and filtering steps for IP sample: {}\n\n".format(" ".join(cmd_args)))
-        subprocess.run(cmd_args)
+        for i in range(len(args.fgSamples)):
+            cmd_args = [os.path.join(args.scriptsDir, "paired-ended-job.sh"), args.fgSamples[i], args.fgSamples2[i], str(args.threads), str(args.minQual), args.genome, args.outRoot + ".fg." + str(i), args.alignmentPath, args.resultsPath, "2>>" + args.cmdLog, "1>&2"]
+            sys.stderr.write("\nExecuting alingment, indexing, and filtering steps for IP samples: {}\n\n".format(" ".join(cmd_args)))
+            subprocess.run(cmd_args)
 
-        cmd_args = [os.path.join(args.scriptsDir, "single-ended-job.sh"), args.bgSamples[0], str(args.threads), str(args.minQual), args.genome, args.outRoot + ".bg", args.alignmentPath, args.resultsPath, "2>>" + args.cmdLog, "1>&2"]
-        sys.stderr.write("\nExecuting alingment, indexing, and filtering steps for Input sample: {}\n\n".format(" ".join(cmd_args)))
-        subprocess.run(cmd_args)
+        for i in range(len(args.bgSamples)):
+            cmd_args = [os.path.join(args.scriptsDir, "paired-ended-job.sh"), args.bgSamples[i], args.bgSamples2[i], str(args.threads), str(args.minQual), args.genome, args.outRoot + ".bg." + str(i), args.alignmentPath, args.resultsPath, "2>>" + args.cmdLog, "1>&2"]
+            sys.stderr.write("\nExecuting alingment, indexing, and filtering steps for Input samples: {}\n\n".format(" ".join(cmd_args)))
+            subprocess.run(cmd_args)
+
+    else:
+        for i in range(len(args.fgSamples)):
+            cmd_args = [os.path.join(args.scriptsDir, "single-ended-job.sh"), args.fgSamples[i], str(args.threads), str(args.minQual), args.genome, args.outRoot + ".fg." + str(i), args.alignmentPath, args.resultsPath, "2>>" + args.cmdLog, "1>&2"]
+            sys.stderr.write("\nExecuting alingment, indexing, and filtering steps for IP sample: {}\n\n".format(" ".join(cmd_args)))
+            subprocess.run(cmd_args)
+            
+        for i in range(len(args.bgSamples)):
+            cmd_args = [os.path.join(args.scriptsDir, "single-ended-job.sh"), args.bgSamples[i], str(args.threads), str(args.minQual), args.genome, args.outRoot + ".bg." + str(i), args.alignmentPath, args.resultsPath, "2>>" + args.cmdLog, "1>&2"]
+            sys.stderr.write("\nExecuting alingment, indexing, and filtering steps for Input sample: {}\n\n".format(" ".join(cmd_args)))
+            subprocess.run(cmd_args)
 
     # Get read counts from IP and input alignments
     sys.stderr.write("\nCalculating total reads for IP and Input samples\n\n")
-    fgBam = os.path.join(args.alignmentPath, args.outRoot) + ".fg.pruned.bam"
-    fgReads = subprocess.run([os.path.join(args.scriptsDir, "get_readcount.sh"), fgBam, str(args.threads), "2>>" + args.cmdLog], capture_output=True, text=True).stdout.strip("\n")
-    bgBam = os.path.join(args.alignmentPath, args.outRoot) + ".bg.pruned.bam"
-    bgReads = subprocess.run([os.path.join(args.scriptsDir, "get_readcount.sh"), bgBam, str(args.threads), "2>>" + args.cmdLog], capture_output=True, text=True).stdout.strip("\n")
+    fgReads = 0
+    bgReads = 0
+    for i in range(len(args.fgSamples)):
+        fgBam = os.path.join(args.alignmentPath, args.outRoot) + ".fg." + str(i) + ".pruned.bam"
+        fgReads += subprocess.run([os.path.join(args.scriptsDir, "get_readcount.sh"), fgBam, str(args.threads), "2>>" + args.cmdLog], capture_output=True, text=True).stdout.strip("\n")
+    for i in range(len(args.bgSamples)):
+        bgBam = os.path.join(args.alignmentPath, args.outRoot) + ".bg." + str(i) + ".pruned.bam"
+        bgReads += subprocess.run([os.path.join(args.scriptsDir, "get_readcount.sh"), bgBam, str(args.threads), "2>>" + args.cmdLog], capture_output=True, text=True).stdout.strip("\n")
     sys.stderr.write("FG Reads: {}\nBG Reads: {}\n".format(fgReads, bgReads))
 
     # Run enrichment tests on the output. Results are written from R.
     sys.stderr.write("\nRunning enrichment tests.\n\n")
-    fgCounts = os.path.join(args.resultsPath, args.outRoot) + ".fg.pruned.te-counts.txt"
-    bgCounts = os.path.join(args.resultsPath, args.outRoot) + ".bg.pruned.te-counts.txt"
+    fgCounts = constructReadCountsStr(args.fgSamples, args.resultsPath, args.outRoot, "fg")
+    bgCounts = constructReadCountsStr(args.bgSamples, args.resultsPath, args.outRoot, "bg")
+    sys.stderr.write("{}\n{}\n".format(fgCounts, bgCounts))
     outFile = os.path.join(args.resultsPath, args.outRoot) + ".enrichment-tests.txt"
     cmd_args = ["Rscript", "--vanilla", os.path.join(args.scriptsDir, "calc_enrichments.Rscript"), fgCounts, bgCounts, fgReads, bgReads, outFile, "2>>" + args.cmdLog]
     sys.stderr.write("Invoking Rscript with the following command: {}\n".format(" ".join(cmd_args)))
     subprocess.run(cmd_args)
-    
     
 if __name__ == "__main__":
     main()
