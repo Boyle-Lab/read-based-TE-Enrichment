@@ -19,13 +19,16 @@ The first step is to obtain/generate an artificial genome. Several examples are 
 
 # Usage
 
-The enrichment test workflow is invoked with the run_enrichment_pipeline.py script. This script performs all necessary alignment, filtering, and analysis steps for a set of immunoprecipitated and control (input) reads.
+The enrichment test workflow is invoked with the run_enrichment_pipeline.py script. This script performs all necessary alignment, filtering, and analysis steps for a set of immunoprecipitated and control (input) reads. The workflow can handle either single-ended or paired-ended samples, and is capable of integrating data from multiple experimental replicates.
 
 ```bash
 run_enrichment_pipeline.py [-h] -f ip_sample.fastq
-                                  [ip_sample.fastq ...] -b input_sample.fastq
-                                  [input_sample.fastq ...] -g genome.fa
-                                  [-a /path/to/write/alignments]
+                                  [ip_sample.fastq ...]
+                                  [-g ip_sample.fastq [ip_sample.fastq ...]]
+                                  -b input_sample.fastq
+                                  [input_sample.fastq ...]
+                                  [-c input_sample.fastq [input_sample.fastq ...]]
+                                  -n genome.fa [-a /path/to/write/alignments]
                                   [-r /path/to/write/results] [-p]
                                   [-t THREADS] [-q N] [-o OUTROOT]
                                   [-s SCRIPTSDIR] [-l CMDLOG]
@@ -34,9 +37,15 @@ run_enrichment_pipeline.py [-h] -f ip_sample.fastq
 ## Required Arguments
 Short | Long | Arg(s) | Description
 ------|------|--------|-------------
--f | --fgSamples | ip_sample.1.fastq [ip_sample.2.fa] | Immunoprecipitated sample fastq file(s). Supplying two files will force paired-ended mode.
--b | --bgSamples | input_sample.1.fastq [input_sample.2.fa] | Input sample fastq file(s). Supplying two files will force paired-ended mode.
--g | --genome | genome.fa | Fasta file containing the pseudogenome to which samples will be aligned.
+-f | --fgSamples | ip_sample.1.fastq [ip_sample.2.fa] | Immunoprecipitated sample fastq file(s) for single-ended or read pair 1. Multiple files will be processed as replicates.
+-b | --bgSamples | input_sample.1.fastq [input_sample.2.fa] | Input sample fastq file(s) for single-ended or read pair 1. Multiple files will be processed as replicates.
+-n | --genome | genome.fa | Fasta file containing the pseudogenome to which samples will be aligned.
+
+## For Paired-Ended Experiments
+Short | Long | Arg(s) | Default | Description
+------|------|--------|---------|-------------
+-g | --fgSamples2 | ip_sample.1.fastq [ip_sample.2.fa] | Immunoprecipitated sample fastq file(s) for read pair 2. Multiple files will be processed as replicates.
+-c | --bgSamples2 | input_sample.1.fastq [input_sample.2.fa] | Input sample fastq file(s) for read pair 2. Multiple files will be processed as replicates.
 
 ## Optional Arguments
 Short | Long | Arg(s) | Default | Description 

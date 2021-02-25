@@ -14,13 +14,13 @@ def constructReadCountsStr(samplesList, resultsPath, outRoot, stype):
 def main():
     parser = ArgumentParser(description='Run enrichment tests for a set of IP and input fastq files against a library of sequences in the given artificial genome.')
     parser.add_argument('-f', '--fgSamples', metavar='ip_sample.fastq', type=str, nargs='+', required=True,
-                        help='Immunoprecipitated sample fastq file(s).')
+                        help='Immunoprecipitated sample fastq file(s) for single-ended or read pair 1.')
     parser.add_argument('-g', '--fgSamples2', metavar='ip_sample.fastq', type=str, nargs='+',
-                        help='Immunoprecipitated sample fastq file(s).')
+                        help='Immunoprecipitated sample fastq file(s) for read pair 2.')
     parser.add_argument('-b', '--bgSamples', metavar='input_sample.fastq', type=str, nargs='+', required=True,
-                        help='Input sample fastq file(s).')
+                        help='Input sample fastq file(s) for single-ended or read pair 1.')
     parser.add_argument('-c', '--bgSamples2', metavar='input_sample.fastq', type=str, nargs='+',
-                        help='Input sample fastq file(s).')
+                        help='Input sample fastq file(s) for read pair 2.')
     parser.add_argument('-n', '--genome', metavar="genome.fa", type=str, required=True,
                         help='Path to artificial genome fasta.')
     parser.add_argument('-a', '--alignmentPath', metavar="/path/to/write/alignments", type=str, default='.',
