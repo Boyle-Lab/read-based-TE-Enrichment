@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript --no-restore --vanilla
+#!/usr/bin/env Rscript --vanilla
 
 ####
 # Process args
@@ -20,15 +20,16 @@ aggregate_reps = function(files, method="intersection") {
     # input file.
     
     counts = read.table(files[1], stringsAsFactors=FALSE, sep="\t", header=FALSE,
-    	                col.names=c("chrom", "chromStart", "chromEnd" "repeat", "count1", "s1", "s2", "cov"))
-    rownames(counts) = counts[,"repeat"]
-    counts=counts[,c("repeat", "count1")]
+    	                col.names=c("chrom", "chromStart", "chromEnd", "rep", "count1", "s1", "s2", "cov"))
+    rownames(counts) = counts[,"rep"]
+    counts=counts[,c("rep", "count1")]
     if (length(files) >1) {
         for (i in 2:length(files)) {
             df2 = read.table(files[i], stringsAsFactors=FALSE, sep="\t", header=FALSE,
-	    	             col.names=c("chrom", "chromStart", "chromEnd" "repeat", "count", "s1", "s2", "cov"))
-	    rownames(df2) = df2[,"repeat"]
-	    df2=df2[,c("repeat", "count")]
+	    	             col.names=c("chrom", "chromStart", "chromEnd", "rep", "count", "s1", "s2", "cov"))
+	    rownames(df2) = df2[,"rep"]
+	    head(df2)
+	    df2=df2[,c("rep", "count")]
 	    if ("method" == "union") {
 	        counts = union_dfs(counts, df2)
 	    } else {
@@ -81,7 +82,7 @@ dat$fisher_pval_cor = p.adjust(dat$fisher_pval, method="bonf")
 dat$chip_input_ratio = (dat$chip_count / (dat$chip_count+dat$chip_bg)) / (dat$input_count / (dat$input_count+dat$input_bg))
 
 dat = cbind(rownames(dat), dat)
-colnames(dat)[1] = "repeat"
+colnames(dat)[1] = "rep"
 
 # Write output
 write.table(dat, row.names=FALSE, col.names=TRUE, quote=FALSE, sep="\t", file=out_fname)

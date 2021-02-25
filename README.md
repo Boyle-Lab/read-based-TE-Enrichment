@@ -8,7 +8,8 @@ Repeat enrichment testing for short-read sequencing data using an assembly-free 
 2. BEDTools (<https://bedtools.readthedocs.io/en/latest/index.html>)
 3. SAMtools (<http://www.htslib.org/>)
 4. Picard Tools (<https://broadinstitute.github.io/picard/>)
-5. Python >= 3.7
+5. Python >= 3.8
+6. R >= 4.0
 
 # Preparing to Run the Pipeline
 

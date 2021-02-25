@@ -64,20 +64,23 @@ def main():
         cmd_args = [os.path.join(args.scriptsDir, "single-ended-job.sh"), args.bgSamples[0], str(args.threads), str(args.minQual), args.genome, args.outRoot + ".bg", args.alignmentPath, args.resultsPath, "2>>" + args.cmdLog, "1>&2"]
         sys.stderr.write("\nExecuting alingment, indexing, and filtering steps for Input sample: {}\n\n".format(" ".join(cmd_args)))
         subprocess.run(cmd_args)
-    
+
     # Get read counts from IP and input alignments
     sys.stderr.write("\nCalculating total reads for IP and Input samples\n\n")
     fgBam = os.path.join(args.alignmentPath, args.outRoot) + ".fg.pruned.bam"
-    fgReads = subprocess.run([os.path.join(args.scriptsDir, "get_readcount.sh"), fgBam, str(args.threads), "2>>" + args.cmdLog, "1>&2"])
+    fgReads = subprocess.run([os.path.join(args.scriptsDir, "get_readcount.sh"), fgBam, str(args.threads), "2>>" + args.cmdLog], capture_output=True, text=True).stdout.strip("\n")
     bgBam = os.path.join(args.alignmentPath, args.outRoot) + ".bg.pruned.bam"
-    fgReads = subprocess.run([os.path.join(args.scriptsDir, "get_readcount.sh"), bgBam, str(args.threads), "2>>" + args.cmdLog, "1>&2"])
+    bgReads = subprocess.run([os.path.join(args.scriptsDir, "get_readcount.sh"), bgBam, str(args.threads), "2>>" + args.cmdLog], capture_output=True, text=True).stdout.strip("\n")
+    sys.stderr.write("FG Reads: {}\nBG Reads: {}\n".format(fgReads, bgReads))
 
     # Run enrichment tests on the output. Results are written from R.
     sys.stderr.write("\nRunning enrichment tests.\n\n")
     fgCounts = os.path.join(args.resultsPath, args.outRoot) + ".fg.pruned.te-counts.txt"
     bgCounts = os.path.join(args.resultsPath, args.outRoot) + ".bg.pruned.te-counts.txt"
     outFile = os.path.join(args.resultsPath, args.outRoot) + ".enrichment-tests.txt"
-    subprocess.run([os.path.join(args.scriptsDir, "calc_enrichments.Rscript"), fgCounts, bgCounts, fgReads, bgReads, outFile, "2>>" + args.cmdLog])
+    cmd_args = ["Rscript", "--vanilla", os.path.join(args.scriptsDir, "calc_enrichments.Rscript"), fgCounts, bgCounts, fgReads, bgReads, outFile, "2>>" + args.cmdLog]
+    sys.stderr.write("Invoking Rscript with the following command: {}\n".format(" ".join(cmd_args)))
+    subprocess.run(cmd_args)
     
     
 if __name__ == "__main__":
