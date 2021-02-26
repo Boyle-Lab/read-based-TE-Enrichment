@@ -10,7 +10,7 @@ def constructReadCountsStr(samplesList, resultsPath, outRoot, stype):
         files.append(os.path.join(resultsPath, outRoot) + "." + stype + "." + str(i) + ".pruned.te-counts.txt")
     return ",".join(files)
 
-def runAlignments(samplesList, samplesList2, scriptsDir, threads, minQual, genome, alingmentPath, outRoot, stype, isPaired):
+def runAlignments(samplesList, samplesList2, scriptsDir, threads, minQual, genome, alignmentPath, resultsPath, outRoot, stype, isPaired):
     """ Run the alignment/filtering pipeline for a set of samples. """
     for i in range(len(samplesList)):
         if isPaired:
@@ -26,7 +26,7 @@ def gatherReadCounts(samplesList, scriptsDir, threads, alignmentPath, outRoot, s
     reads = 0
     for i in range(len(samplesList)):
         bam = os.path.join(alignmentPath, outRoot) + "." + stype + "." + str(i) + ".pruned.bam"
-        reads += subprocess.run([os.path.join(args.scriptsDir, "get_readcount.sh"), bam, str(threads)], capture_output=True, text=True).stdout.strip("\n")
+        reads += int(subprocess.run([os.path.join(scriptsDir, "get_readcount.sh"), bam, str(threads)], capture_output=True, text=True).stdout.strip("\n"))
     return reads
 
 
@@ -56,8 +56,6 @@ def main():
                         help='Output root to prepend to results. By default, the basename of the first immunoprecipitated fastq file will be used.')
     parser.add_argument('-s', '--scriptsDir', type=str, default='./scripts',
                         help='Path to shell scripts.')
-    parser.add_argument('-l', '--cmdLog', type=str, default='run_enrichment_pipeline.cmd.log',
-                        help="File to write command output to.")
 
     args = parser.parse_args()
     
@@ -76,45 +74,13 @@ def main():
         
     # We will utilize external tools to run each step of the pipeline through system calls.
     # Alignment/coverage pipeline for IP and Input samples
-    runAlignments(args.fgSamples, args.fgSamples2, args.scriptsDir, args.threads, args.minQual, args.genome, args.alignmentPath, args.outRoot, "fg", args.paired)
-    runAlignments(args.bgSamples, args.bgSamples2, args.scriptsDir, args.threads, args.minQual, args.genome, args.alignmentPath, args.outRoot, "bg", args.paired)
-    
-    """
-    if args.paired:
-        for i in range(len(args.fgSamples)):
-            cmd_args = [os.path.join(args.scriptsDir, "paired-ended-job.sh"), args.fgSamples[i], args.fgSamples2[i], str(args.threads), str(args.minQual), args.genome, args.outRoot + ".fg." + str(i), args.alignmentPath, args.resultsPath, "2>>" + args.cmdLog, "1>&2"]
-            sys.stderr.write("\nExecuting alingment, indexing, and filtering steps for IP samples: {}\n\n".format(" ".join(cmd_args)))
-            subprocess.run(cmd_args)
-
-        for i in range(len(args.bgSamples)):
-            cmd_args = [os.path.join(args.scriptsDir, "paired-ended-job.sh"), args.bgSamples[i], args.bgSamples2[i], str(args.threads), str(args.minQual), args.genome, args.outRoot + ".bg." + str(i), args.alignmentPath, args.resultsPath, "2>>" + args.cmdLog, "1>&2"]
-            sys.stderr.write("\nExecuting alingment, indexing, and filtering steps for Input samples: {}\n\n".format(" ".join(cmd_args)))
-            subprocess.run(cmd_args)
-
-    else:
-        for i in range(len(args.fgSamples)):
-            cmd_args = [os.path.join(args.scriptsDir, "single-ended-job.sh"), args.fgSamples[i], str(args.threads), str(args.minQual), args.genome, args.outRoot + ".fg." + str(i), args.alignmentPath, args.resultsPath, "2>>" + args.cmdLog, "1>&2"]
-            sys.stderr.write("\nExecuting alingment, indexing, and filtering steps for IP sample: {}\n\n".format(" ".join(cmd_args)))
-            subprocess.run(cmd_args)
-            
-        for i in range(len(args.bgSamples)):
-            cmd_args = [os.path.join(args.scriptsDir, "single-ended-job.sh"), args.bgSamples[i], str(args.threads), str(args.minQual), args.genome, args.outRoot + ".bg." + str(i), args.alignmentPath, args.resultsPath, "2>>" + args.cmdLog, "1>&2"]
-            sys.stderr.write("\nExecuting alingment, indexing, and filtering steps for Input sample: {}\n\n".format(" ".join(cmd_args)))
-            subprocess.run(cmd_args)
-    """
-    
+    runAlignments(args.fgSamples, args.fgSamples2, args.scriptsDir, args.threads, args.minQual, args.genome, args.alignmentPath, args.resultsPath, args.outRoot, "fg", args.paired)
+    runAlignments(args.bgSamples, args.bgSamples2, args.scriptsDir, args.threads, args.minQual, args.genome, args.alignmentPath, args.resultsPath, args.outRoot, "bg", args.paired)
+        
     # Get read counts from IP and input alignments
     sys.stderr.write("\nCalculating total reads for IP and Input samples\n\n")
     fgReads = gatherReadCounts(args.fgSamples, args.scriptsDir, args.threads, args.alignmentPath, args.outRoot, "fg")
     bgReads = gatherReadCounts(args.bgSamples, args.scriptsDir, args.threads, args.alignmentPath, args.outRoot, "bg")
-    """
-    for i in range(len(args.fgSamples)):
-        fgBam = os.path.join(args.alignmentPath, args.outRoot) + ".fg." + str(i) + ".pruned.bam"
-        fgReads += subprocess.run([os.path.join(args.scriptsDir, "get_readcount.sh"), fgBam, str(args.threads), "2>>" + args.cmdLog], capture_output=True, text=True).stdout.strip("\n")
-    for i in range(len(args.bgSamples)):
-        bgBam = os.path.join(args.alignmentPath, args.outRoot) + ".bg." + str(i) + ".pruned.bam"
-        bgReads += subprocess.run([os.path.join(args.scriptsDir, "get_readcount.sh"), bgBam, str(args.threads), "2>>" + args.cmdLog], capture_output=True, text=True).stdout.strip("\n")
-    """
     sys.stderr.write("FG Reads: {}\nBG Reads: {}\n".format(fgReads, bgReads))
 
     # Run enrichment tests on the output. Results are written from R.
@@ -122,7 +88,7 @@ def main():
     fgCounts = constructReadCountsStr(args.fgSamples, args.resultsPath, args.outRoot, "fg")
     bgCounts = constructReadCountsStr(args.bgSamples, args.resultsPath, args.outRoot, "bg")
     outFile = os.path.join(args.resultsPath, args.outRoot) + ".enrichment-tests.txt"
-    cmd_args = ["Rscript", "--vanilla", os.path.join(args.scriptsDir, "calc_enrichments.Rscript"), fgCounts, bgCounts, fgReads, bgReads, outFile, "2>>" + args.cmdLog]
+    cmd_args = ["Rscript", "--vanilla", os.path.join(args.scriptsDir, "calc_enrichments.Rscript"), fgCounts, bgCounts, str(fgReads), str(bgReads), outFile]
     sys.stderr.write("Invoking Rscript with the following command: {}\n".format(" ".join(cmd_args)))
     subprocess.run(cmd_args)
     
