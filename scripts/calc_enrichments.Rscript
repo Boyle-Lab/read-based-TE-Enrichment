@@ -80,6 +80,8 @@ dat[which(dat$input_count == 0), "input_bg"] = ctrl_nreads
 dat$fisher_pval = apply(dat, 1, function(x) { f = fisher.test(t(matrix(as.numeric(x), nrow=2, ncol=2)), alternative="g"); return(f$p.value) })
 dat$fisher_pval_cor = p.adjust(dat$fisher_pval, method="bonf")
 dat$chip_input_ratio = (dat$chip_count / (dat$chip_count+dat$chip_bg)) / (dat$input_count / (dat$input_count+dat$input_bg))
+dat$odds_ratio = apply(dat, 1, function(x) { f = fisher.test(t(matrix(as.numeric(x), nrow=2, ncol=2)), alternative="g"); return(f$estimate) })
+
 
 dat = cbind(rownames(dat), dat)
 colnames(dat)[1] = "rep"
