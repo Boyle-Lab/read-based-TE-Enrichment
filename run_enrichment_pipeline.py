@@ -60,9 +60,9 @@ def main():
     args = parser.parse_args()
     
     # Sanity checks
-    if (args.paired and args.fgSamples2 == None) or (len(args.fgSamples) != len(args.fgSamples2)):
+    if args.paired and (args.fgSamples2 == None or (len(args.fgSamples) != len(args.fgSamples2))):
         parser.exit(status=2, message="ERROR: --paired mode requires an equal number of files for pair1 and pair2 immunoprecipitated sample(s)!\n")
-    if (args.paired and args.bgSamples2 == None) or (len(args.bgSamples) != len(args.bgSamples2)):
+    if args.paired and (args.bgSamples2 == None or (len(args.bgSamples) != len(args.bgSamples2))):
         parser.exit(status=2, message="ERROR: --paired mode requires an equal number of files for pair1 and pair2 input sample(s)!\n")
     if (args.fgSamples2 != None and args.fgSamples != None) and (args.bgSamples2 != None and args.bgSamples != None) and not args.paired:
         args.paired = True

@@ -1,9 +1,9 @@
 #!/bin/bash                                                                                                      
 
 # Load software modules. Comment these lines if your system does not have an LMOD type module system.
-module load BWA/0.7.16a
+module load BWA/0.7.17
 module load SAMtools/1.5
-module load BEDTools2/2.26.0
+module load BEDTools/2.26.0
 module load picard/2.18.0
 
 WD=$(pwd)
