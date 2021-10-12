@@ -29,4 +29,4 @@ samtools view -b -h -F 4 -F 256 -F 1024 -F 2048 -q $MAPQ $BWA_DIR/$SAMPLE.md.bam
 samtools index $BWA_DIR/$SAMPLE.pruned.bam
 
 # Map against the reference bed to total up reads that map to each TE consensus
-bedtools coverage -a $(echo $GENOME | sed 's/fa$/bed/') -b $BWA_DIR/$SAMPLE.pruned.bam > $RESULTS_DIR/$SAMPLE.pruned.te-counts.txt
+#bedtools coverage -a $(echo $GENOME | sed 's/fa$/bed/') -b $BWA_DIR/$SAMPLE.pruned.bam > $RESULTS_DIR/$SAMPLE.pruned.te-counts.txt

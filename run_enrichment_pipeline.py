@@ -21,11 +21,22 @@ def runAlignments(samplesList, samplesList2, scriptsDir, threads, minQual, genom
         subprocess.run(cmd_args)
 
 
-def gatherReadCounts(samplesList, scriptsDir, threads, alignmentPath, outRoot, stype):
+def gatherTeCounts(samplesList, scriptsDir, genome, alignmentPath, resultsPath, outRoot, stype, isPaired):
+    """ Gather TE counts from alignments """
+    for i in range(len(samplesList)):
+        cmd_args = [os.path.join(scriptsDir, "get_te_counts.sh"), genome, outRoot + "." + stype + "." + str(i), alignmentPath, resultsPath]
+        sys.stderr.write("\nExecuting command: {}\n\n".format(" ".join(cmd_args)))
+        subprocess.run(cmd_args)
+
+
+def gatherReadCounts(samplesList, scriptsDir, threads, alignmentPath, outRoot, stype, mode):
     """ Collect total read counts for filtered reads. """
     reads = 0
+    ext = ".pruned.bam"
+    if mode == "all_reads":
+        ext = ".bam"
     for i in range(len(samplesList)):
-        bam = os.path.join(alignmentPath, outRoot) + "." + stype + "." + str(i) + ".pruned.bam"
+        bam = os.path.join(alignmentPath, outRoot) + "." + stype + "." + str(i) + ext
         reads += int(subprocess.run([os.path.join(scriptsDir, "get_readcount.sh"), bam, str(threads)], capture_output=True, text=True).stdout.strip("\n"))
     return reads
 
@@ -56,6 +67,10 @@ def main():
                         help='Output root to prepend to results. By default, the basename of the first immunoprecipitated fastq file will be used.')
     parser.add_argument('-s', '--scriptsDir', type=str, default='./scripts',
                         help='Path to shell scripts.')
+    parser.add_argument('-m', '--bgmode', choices=['repeat_reads', 'all_reads'], default='repeat_reads',
+                        help='Which reads to use for background. repeat_reads: Test individual repeats against all repeat reads. Equivalent to testing for enrichment in a single TE type relative to others. all_reads: Test individual repeats against all other reads, whether or not they map to a repeat (or at all!). Equivalent to testing for enrichment of repeat-based reads in the whole sequencing dataset.')
+    parser.add_argument('--tests_only', action='store_true',
+                        help='Only perform enrichment tests based on existing alignments.')
 
     args = parser.parse_args()
     
@@ -74,13 +89,18 @@ def main():
         
     # We will utilize external tools to run each step of the pipeline through system calls.
     # Alignment/coverage pipeline for IP and Input samples
-    runAlignments(args.fgSamples, args.fgSamples2, args.scriptsDir, args.threads, args.minQual, args.genome, args.alignmentPath, args.resultsPath, args.outRoot, "fg", args.paired)
-    runAlignments(args.bgSamples, args.bgSamples2, args.scriptsDir, args.threads, args.minQual, args.genome, args.alignmentPath, args.resultsPath, args.outRoot, "bg", args.paired)
-        
+    if not args.tests_only:
+        runAlignments(args.fgSamples, args.fgSamples2, args.scriptsDir, args.threads, args.minQual, args.genome, args.alignmentPath, args.resultsPath, args.outRoot, "fg", args.paired)
+        runAlignments(args.bgSamples, args.bgSamples2, args.scriptsDir, args.threads, args.minQual, args.genome, args.alignmentPath, args.resultsPath, args.outRoot, "bg", args.paired)    
+
+    # Gather the TE counts from the alignment data.
+    gatherTeCounts(args.fgSamples, args.scriptsDir, args.genome, args.alignmentPath, args.resultsPath, args.outRoot, "fg", args.paired)
+    gatherTeCounts(args.fgSamples, args.scriptsDir, args.genome, args.alignmentPath, args.resultsPath, args.outRoot, "bg", args.paired)
+    
     # Get read counts from IP and input alignments
     sys.stderr.write("\nCalculating total reads for IP and Input samples\n\n")
-    fgReads = gatherReadCounts(args.fgSamples, args.scriptsDir, args.threads, args.alignmentPath, args.outRoot, "fg")
-    bgReads = gatherReadCounts(args.bgSamples, args.scriptsDir, args.threads, args.alignmentPath, args.outRoot, "bg")
+    fgReads = gatherReadCounts(args.fgSamples, args.scriptsDir, args.threads, args.alignmentPath, args.outRoot, "fg", args.bgmode)
+    bgReads = gatherReadCounts(args.bgSamples, args.scriptsDir, args.threads, args.alignmentPath, args.outRoot, "bg", args.bgmode)
     sys.stderr.write("FG Reads: {}\nBG Reads: {}\n".format(fgReads, bgReads))
 
     # Run enrichment tests on the output. Results are written from R.
